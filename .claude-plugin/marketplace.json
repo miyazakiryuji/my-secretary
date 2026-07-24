@@ -1,0 +1,12 @@
+{
+  "name": "my-secretary",
+  "description": "自分専用のAI秘書を育てるプラグイン「my-secretary」の配布マーケットプレイス。",
+  "owner": { "name": "宮﨑竜治" },
+  "plugins": [
+    {
+      "name": "my-secretary",
+      "source": ".",
+      "description": "面談で秘書の名前・口調を決めると、朝会・夕会・週次レビュー・タスク/メモ/アイデア管理を回してくれる、自分専用のAI秘書。ローカルのMarkdownだけで完結。"
+    }
+  ]
+}
