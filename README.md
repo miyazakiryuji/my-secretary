@@ -23,15 +23,27 @@
 
 ## インストール
 
-Claude Code デスクトップアプリのチャット欄（メッセージ入力欄）に、1行ずつ貼り付けて送信:
+**デスクトップアプリの場合（おすすめ・コピペ1行）** — Code タブのチャット欄に、この一文を送るだけ:
 
 ```
-/plugin marketplace add miyazakiryuji/my-secretary
-/plugin install my-secretary@my-secretary
+miyazakiryuji/my-secretary というプラグインを追加して、インストールしてください
 ```
 
-インストール後は Claude Code を一度再起動してください（「開くだけで出迎え」のフックが
-再起動後に有効になります）。一覧に出てこない場合だけ `/plugin enable my-secretary@my-secretary`
+AI がマーケットプレイス登録からインストールまで代行してくれます
+（デスクトップアプリでは `/plugin` コマンドが直接使えないため、この方式が確実です）。
+
+**ターミナル（CLI）の場合** — 次の2行:
+
+```
+claude plugin marketplace add miyazakiryuji/my-secretary
+claude plugin install my-secretary@my-secretary
+```
+
+（CLI の対話セッション内なら `/plugin marketplace add miyazakiryuji/my-secretary` →
+`/plugin install my-secretary@my-secretary` でも同じです）
+
+インストール後は Claude Code / デスクトップアプリを**一度再起動**してください
+（「開くだけで出迎え」のフックが再起動後に有効になります）。
 
 ## 使いはじめ（3ステップ）
 
