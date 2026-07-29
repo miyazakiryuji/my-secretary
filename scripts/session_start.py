@@ -23,6 +23,62 @@ import sys
 MARKER = "my-secretary:workspace"
 WEEKDAYS = ["月", "火", "水", "木", "金", "土", "日"]
 DEADLINE_RE = re.compile(r"（締切:\s*(\d{4}-\d{2}-\d{2})）")
+WAITING_RE = re.compile(r"（返事待ち:")
+APPT_RE = re.compile(r"^-\s*(\d{4}-\d{2}-\d{2})\s+(\S+)\s*(.*)$")
+
+
+def scan_appointments(ws, today):
+    """予定.md から (今日の予定リスト, 直近3日の件数) を返す。"""
+    p = os.path.join(ws, "予定.md")
+    if not os.path.isfile(p):
+        return [], 0
+    try:
+        with open(p, encoding="utf-8", errors="replace") as f:
+            lines = f.read().splitlines()
+    except Exception:
+        return [], 0
+    todays, soon = [], 0
+    in_past = False
+    try:
+        d_today = datetime.date(*map(int, today.split("-")))
+    except Exception:
+        return [], 0
+    for line in lines:
+        s = line.strip()
+        if s.startswith("##"):
+            in_past = "済" in s  # 「## 済んだ予定」以降は履歴
+            continue
+        if in_past:
+            continue
+        m = APPT_RE.match(s)
+        if not m:
+            continue
+        date_s, time_s, title = m.group(1), m.group(2), m.group(3).strip()
+        if date_s == today:
+            todays.append("%s %s" % (time_s, title))
+        else:
+            try:
+                d = datetime.date(*map(int, date_s.split("-")))
+                if 0 < (d - d_today).days <= 3:
+                    soon += 1
+            except Exception:
+                pass
+    return todays, soon
+
+
+def count_waiting(ws):
+    """（返事待ち:）付きの未完タスク件数。"""
+    n = 0
+    for p in glob.glob(os.path.join(ws, "タスク", "*.md")):
+        try:
+            with open(p, encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    s = line.strip()
+                    if s.startswith("- [ ]") and WAITING_RE.search(s):
+                        n += 1
+        except Exception:
+            pass
+    return n
 
 
 def scan_deadlines(ws, today):
@@ -31,7 +87,7 @@ def scan_deadlines(ws, today):
     undone, done = {}, set()
     for p in glob.glob(os.path.join(ws, "タスク", "*.md")):
         try:
-            with open(p, encoding="utf-8") as f:
+            with open(p, encoding="utf-8", errors="replace") as f:
                 for line in f:
                     s = line.strip()
                     m = DEADLINE_RE.search(s)
@@ -56,7 +112,7 @@ def find_workspace(start):
         p = os.path.join(d, "CLAUDE.md")
         if os.path.isfile(p):
             try:
-                with open(p, encoding="utf-8") as f:
+                with open(p, encoding="utf-8", errors="replace") as f:
                     head = f.read(4000)
             except Exception:
                 head = ""
@@ -104,7 +160,7 @@ def read_memory(ws):
     if not os.path.isfile(p):
         return 0, ""
     try:
-        with open(p, encoding="utf-8") as f:
+        with open(p, encoding="utf-8", errors="replace") as f:
             text = f.read(4000)
     except Exception:
         return 0, ""
@@ -117,7 +173,7 @@ def count_inbox(ws):
     n = 0
     for p in glob.glob(os.path.join(ws, "受信箱", "*.md")):
         try:
-            with open(p, encoding="utf-8") as f:
+            with open(p, encoding="utf-8", errors="replace") as f:
                 for line in f:
                     s = line.strip()
                     if s.startswith("- ") and not s.startswith("- [済"):
@@ -159,7 +215,7 @@ def main():
     task_path = os.path.join(ws, "タスク", today + ".md")
     if os.path.isfile(task_path):
         try:
-            with open(task_path, encoding="utf-8") as f:
+            with open(task_path, encoding="utf-8", errors="replace") as f:
                 lines = f.read().splitlines()
         except Exception:
             lines = []
@@ -175,12 +231,14 @@ def main():
     records = count_records(ws)
     days = days_together(ws, today)
     mem_count, mem_excerpt = read_memory(ws)
+    today_appts, soon_appts = scan_appointments(ws, today)
+    waiting = count_waiting(ws)
 
     handover = ""
     hp = os.path.join(ws, "申し送り.md")
     if os.path.isfile(hp):
         try:
-            with open(hp, encoding="utf-8") as f:
+            with open(hp, encoding="utf-8", errors="replace") as f:
                 handover = f.read(600).strip()
         except Exception:
             handover = ""
@@ -200,14 +258,17 @@ def main():
         "秘書名: %s。%s人格・口調・ふるまいは執務室の CLAUDE.md に従うこと。\n"
         "\n"
         "現在: %s（%s）%s ／ 一緒に働いて %d日目・記録の蓄積 %d件・秘書の記憶 %d件\n"
+        "- 今日の予定: %s\n"
         "- 今日のタスクファイル（タスク/%s.md）: %s\n"
         "- 今日の日報: %s\n"
         "- 受信箱の未整理: %d件\n"
         "- 締切のあるタスク: 期限切れ %d件 ／ 今日が締切 %d件\n"
+        "- 返事待ち（相手のボール）: %d件\n"
         "%s%s"
         "\n"
         "最初の応答では、内容が何であれ、まず秘書として 1〜2 行で出迎えること。\n"
         "%s"
+        "今日の予定があれば、それを最初に伝える（動かせない約束が1日の骨格になる）。\n"
         "期限切れ・今日締切があれば、出迎えのひとことで最優先に伝える。\n"
         "申し送りがあれば「前回は◯◯の途中でした」と軽く触れる。\n"
         "用件があればそれを最優先で処理する。挨拶や雑談だけなら、上の状態と時間帯から\n"
@@ -215,7 +276,11 @@ def main():
         "17時以降で日報がまだ → 夕会を提案）。提案は1回に1つ。断られたら同じセッションでは繰り返さない。"
         % (sec_name, owner_part, today, weekday, now.strftime("%H:%M"),
            days, records, mem_count,
-           today, task_state, report_state, inbox, overdue, due_today,
+           (("／".join(today_appts[:5])
+             + ("／ほか%d件" % (len(today_appts) - 5) if len(today_appts) > 5 else ""))
+            if today_appts
+            else ("なし（直近3日に%d件）" % soon_appts if soon_appts else "なし")),
+           today, task_state, report_state, inbox, overdue, due_today, waiting,
            memory_part, handover_part, milestone_part)
     )
 

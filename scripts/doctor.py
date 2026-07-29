@@ -66,7 +66,7 @@ def main():
              "まだの場合は /my-secretary:setup で秘書との面談から始めてください")
     else:
         try:
-            with open(claude_md, encoding="utf-8") as f:
+            with open(claude_md, encoding="utf-8", errors="replace") as f:
                 head = f.read(2000)
         except Exception:
             head = ""
@@ -100,14 +100,16 @@ def main():
 
     # 6. 執務室限定スキル（セットアップ済みの場合のみ）
     if is_ws:
-        expected = ["deadline-watch", "recall", "handover", "learning"]
+        expected = ["deadline-watch", "recall", "handover", "learning",
+                    "appointments", "people", "drafting"]
         missing_sk = [s for s in expected
                       if not os.path.isfile(os.path.join(target, ".claude", "skills", s, "SKILL.md"))]
         if not missing_sk:
-            ok("執務室スキル（締切・思い出し・申し送り・学習）— すべてあり")
+            ok("執務室スキル7点（予定・締切・思い出し・申し送り・学習・人物・代筆）— すべてあり")
         else:
             warn("執務室スキルが不足: " + "・".join(missing_sk),
-                 "/my-secretary:setup を再実行すると足りない分だけ複製されます")
+                 "/my-secretary:update を実行すると足りない分だけ補充されます"
+                 "（記録・人格はそのまま）")
 
     # 7. 今日のようす（情報表示のみ）
     today = datetime.date.today().strftime("%Y-%m-%d")

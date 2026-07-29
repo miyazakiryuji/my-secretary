@@ -45,5 +45,6 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doctor.py" [$ARGUMENTS があればその
 
 1. 総合判定（例: 「準備OKです！」／「⚠️が1件ありますが、すぐ直せます」）
 2. ⚠️ があれば、直し方を1行ずつ
-3. 次の一歩（未セットアップなら `/my-secretary:setup`、セットアップ済みなら
-   `/my-secretary:morning` か、そのまま「タスク追加 ◯◯」と話しかける）
+3. 次の一歩（未セットアップなら `/my-secretary:setup`、**執務室スキルが不足していれば
+   `/my-secretary:update`**、それ以外は `/my-secretary:morning` か、そのまま
+   「タスク追加 ◯◯」と話しかける）
