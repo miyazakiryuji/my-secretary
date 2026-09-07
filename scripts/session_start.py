@@ -20,6 +20,12 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    import recurring  # 繰り返し.md を読む部品（無ければ繰り返しは無視）
+except Exception:  # pragma: no cover
+    recurring = None
+
 MARKER = "my-secretary:workspace"
 WEEKDAYS = ["月", "火", "水", "木", "金", "土", "日"]
 DEADLINE_RE = re.compile(r"（締切:\s*(\d{4}-\d{2}-\d{2})）")
@@ -125,7 +131,8 @@ def find_workspace(start):
     return None, ""
 
 
-DATA_DIRS = ["受信箱", "タスク", "アイデア", "ノート", "日報", "週次レビュー"]
+DATA_DIRS = ["受信箱", "タスク", "アイデア", "ノート", "日報", "週次レビュー",
+             "月次レビュー", "議事録", "業務手順", "人物"]
 
 
 def count_records(ws):
@@ -234,6 +241,23 @@ def main():
     today_appts, soon_appts = scan_appointments(ws, today)
     waiting = count_waiting(ws)
 
+    # 繰り返し（定例）: 予定は今日の予定に合流、タスクは件数だけ（朝会が展開する）
+    rec_tasks = 0
+    if recurring is not None:
+        try:
+            for it in recurring.items_for(ws, now.date()):
+                if it["kind"] == "予定":
+                    t = it["start"] or "終日"
+                    if it["end"]:
+                        t += "-" + it["end"]
+                    today_appts.append("%s %s（定例）" % (t, it["title"]))
+                else:
+                    rec_tasks += 1
+            today_appts.sort(key=lambda s: ("0" if s[0].isdigit() else "1") + s)
+        except Exception:
+            pass
+    routines_n = len(glob.glob(os.path.join(ws, "業務手順", "*.md")))
+
     handover = ""
     hp = os.path.join(ws, "申し送り.md")
     if os.path.isfile(hp):
@@ -264,6 +288,7 @@ def main():
         "- 受信箱の未整理: %d件\n"
         "- 締切のあるタスク: 期限切れ %d件 ／ 今日が締切 %d件\n"
         "- 返事待ち（相手のボール）: %d件\n"
+        "- 繰り返しのタスク（今日の定例）: %d件（朝会で今日のタスクに載る） ／ 定型業務のレシピ: %d件\n"
         "%s%s"
         "\n"
         "最初の応答では、内容が何であれ、まず秘書として 1〜2 行で出迎えること。\n"
@@ -281,6 +306,7 @@ def main():
             if today_appts
             else ("なし（直近3日に%d件）" % soon_appts if soon_appts else "なし")),
            today, task_state, report_state, inbox, overdue, due_today, waiting,
+           rec_tasks, routines_n,
            memory_part, handover_part, milestone_part)
     )
 

@@ -18,8 +18,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doctor.py" [$ARGUMENTS があればその
 
 - `python3` がなければ `python` で再試行する。
 - どちらもない場合は「⚠️ Python が見つかりません」と伝えたうえで、同じ項目
-  （CLAUDE.md のマーカー・プロフィール.md・標準6フォルダ・今日のファイル）を
-  自分で Read / ls して確認し、✅／⚠️ 形式で報告する。
+  （CLAUDE.md のマーカー・プロフィール.md・標準7フォルダ・今日のファイル）を
+  自分で Read / ls して確認し、✅／⚠️ 形式で報告する（標準フォルダは7つ:
+  受信箱・タスク・アイデア・ノート・日報・週次レビュー・月次レビュー。執務室スキルは12点）。
 
 ## 2. プラグイン本体のチェック
 
@@ -29,8 +30,10 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/doctor.py" [$ARGUMENTS があればその
 - `${CLAUDE_PLUGIN_ROOT}/skills/secretary-mode/references/templates.md`
 - `${CLAUDE_PLUGIN_ROOT}/skills/secretary-mode/references/claude-md-template.md`
 - `${CLAUDE_PLUGIN_ROOT}/skills/secretary-mode/references/persona-presets.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/secretary-mode/references/role-presets.md`（役割の型）
 - `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json`（フォルダを開くだけで秘書モードになる仕掛け）
 - `${CLAUDE_PLUGIN_ROOT}/scripts/session_start.py`
+- `${CLAUDE_PLUGIN_ROOT}/scripts/recurring.py`（繰り返し.md を読む部品。出迎え・声かけが使う）
 
 フック2ファイルに問題がなければ「✅ 自動出迎え（SessionStartフック）— OK」。
 「執務室で開いたのに出迎えがない」という相談の場合は、プラグインのインストール・有効化後に

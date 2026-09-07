@@ -23,6 +23,12 @@ import re
 import sys
 import tempfile
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    import recurring  # 繰り返し.md を読む部品（無ければ繰り返しは無視）
+except Exception:  # pragma: no cover
+    recurring = None
+
 MARKER = "my-secretary:workspace"
 APPT_RE = re.compile(r"^-\s*(\d{4}-\d{2}-\d{2})\s+(\d{1,2}):(\d{2})")
 DEADLINE_RE = re.compile(r"（締切:\s*(\d{4}-\d{2}-\d{2})）")
@@ -128,6 +134,8 @@ def main():
     nudges = []
 
     # ── 1. 予定リマインド（開始45分前〜開始時刻）＋ 終わったころの記録の促し
+    #       対象 = 予定.md の今日の分 ＋ 繰り返し.md の今日の「予定」（定例）
+    todays = []  # (hh, mm, title)
     appt_path = os.path.join(ws, "予定.md")
     if os.path.isfile(appt_path) and ({"appt", "after_appt"} & allowed):
         in_past = False
@@ -145,17 +153,27 @@ def main():
             m = APPT_RE.match(s)
             if not m or m.group(1) != today:
                 continue
+            title = re.sub(r"^-\s*\S+\s+\S+\s*", "", s).strip() or "予定"
+            todays.append((m.group(2), m.group(3), title))
+    if recurring is not None and ({"appt", "after_appt"} & allowed):
+        try:
+            for it in recurring.items_for(ws, now.date()):
+                if it["kind"] == "予定" and it["start"]:
+                    hh, mm = it["start"].split(":")
+                    todays.append((hh, mm, it["title"] + "（定例）"))
+        except Exception:
+            pass
+    if todays:
+        for hh, mm, title in todays:
             try:
-                start = now.replace(hour=int(m.group(2)), minute=int(m.group(3)),
-                                    second=0, microsecond=0)
+                start = now.replace(hour=int(hh), minute=int(mm), second=0, microsecond=0)
             except ValueError:
                 continue
-            title = re.sub(r"^-\s*\S+\s+\S+\s*", "", s).strip() or "予定"
             mins = int((start - now).total_seconds() // 60)
-            key_before = "appt:%s:%s" % (m.group(2), m.group(3))
+            key_before = "appt:%s:%s" % (hh, mm)
             if "appt" in allowed and 0 <= mins <= 45 and key_before not in fired:
                 nudges.append("まもなく %s:%s から「%s」です（あと約%d分）。"
-                              % (m.group(2), m.group(3), title, mins))
+                              % (hh, mm, title, mins))
                 fired.add(key_before)
             key_after = "after:" + key_before
             if ("after_appt" in allowed and -150 <= mins <= -75

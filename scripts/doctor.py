@@ -17,7 +17,7 @@ import os
 import sys
 
 MARKER = "my-secretary:workspace"
-STANDARD_DIRS = ["受信箱", "タスク", "アイデア", "ノート", "日報", "週次レビュー"]
+STANDARD_DIRS = ["受信箱", "タスク", "アイデア", "ノート", "日報", "週次レビュー", "月次レビュー"]
 
 ok_count = 0
 warn_count = 0
@@ -101,15 +101,47 @@ def main():
     # 6. 執務室限定スキル（セットアップ済みの場合のみ）
     if is_ws:
         expected = ["deadline-watch", "recall", "handover", "learning",
-                    "appointments", "people", "drafting"]
+                    "appointments", "people", "drafting",
+                    "routines", "customize", "recurring", "estimates", "intake"]
         missing_sk = [s for s in expected
                       if not os.path.isfile(os.path.join(target, ".claude", "skills", s, "SKILL.md"))]
         if not missing_sk:
-            ok("執務室スキル7点（予定・締切・思い出し・申し送り・学習・人物・代筆）— すべてあり")
+            ok("執務室スキル12点（予定・締切・思い出し・申し送り・学習・人物・代筆・"
+               "定型業務・自分仕様・繰り返し・見積もり・取り込み）— すべてあり")
         else:
             warn("執務室スキルが不足: " + "・".join(missing_sk),
                  "/my-secretary:update を実行すると足りない分だけ補充されます"
                  "（記録・人格はそのまま）")
+
+    # 6b. 本人が育てるファイル（あれば形式を軽く点検。無くても正常）
+    if is_ws:
+        rec = os.path.join(target, "繰り返し.md")
+        if os.path.isfile(rec):
+            try:
+                sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                import recurring  # noqa: E402
+                n_all = 0
+                with open(rec, encoding="utf-8", errors="replace") as f:
+                    for line in f:
+                        s = line.strip()
+                        if s.startswith("- ") and not s.endswith("（休止）"):
+                            n_all += 1
+                n_ok = 0
+                for line in open(rec, encoding="utf-8", errors="replace"):
+                    s = line.strip()
+                    if s.startswith("- ") and not s.endswith("（休止）") and recurring.LINE_RE.match(s):
+                        n_ok += 1
+                if n_all == n_ok:
+                    ok("繰り返し.md — %d行、書式OK" % n_ok)
+                else:
+                    warn("繰り返し.md に書式の違う行が %d行あります" % (n_all - n_ok),
+                         "行は「- 毎週 月 10:00 内容」「- 毎月 1日 終日 内容」の形にしてください")
+            except Exception:
+                print("ℹ️  繰り返し.md はありますが、書式の点検はできませんでした")
+        routines_dir = os.path.join(target, "業務手順")
+        if os.path.isdir(routines_dir):
+            n = len([f for f in os.listdir(routines_dir) if f.endswith(".md")])
+            print("ℹ️  業務手順（定型業務のレシピ）: %d件" % n)
 
     # 7. 今日のようす（情報表示のみ）
     today = datetime.date.today().strftime("%Y-%m-%d")
