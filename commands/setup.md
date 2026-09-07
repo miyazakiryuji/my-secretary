@@ -76,8 +76,8 @@ Bash ツールで実行する（追加領域があれば `--extra` に、作成�
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/init_workspace.py" [作成先] [--extra "議事録,日記"] --plugin-root "${CLAUDE_PLUGIN_ROOT}"
 ```
 
-（`--plugin-root` を付けると、この執務室**専用**のスキル12点〔予定・締切/返事待ち・思い出し・
-申し送り・学習・人物・代筆・定型業務・自分仕様・繰り返し・見積もり・取り込み〕が
+（`--plugin-root` を付けると、この執務室**専用**のスキル13点〔予定・締切/返事待ち・思い出し・
+申し送り・学習・人物・代筆・定型業務・自分仕様・繰り返し・見積もり・取り込み・決めたこと〕が
 プラグインの `workspace-skills/` から執務室の `.claude/skills/` へ複製される。既存は上書きしない）
 
 - `python3` がなければ `python` で再試行する。

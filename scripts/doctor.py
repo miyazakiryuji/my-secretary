@@ -102,12 +102,12 @@ def main():
     if is_ws:
         expected = ["deadline-watch", "recall", "handover", "learning",
                     "appointments", "people", "drafting",
-                    "routines", "customize", "recurring", "estimates", "intake"]
+                    "routines", "customize", "recurring", "estimates", "intake", "decisions"]
         missing_sk = [s for s in expected
                       if not os.path.isfile(os.path.join(target, ".claude", "skills", s, "SKILL.md"))]
         if not missing_sk:
-            ok("執務室スキル12点（予定・締切・思い出し・申し送り・学習・人物・代筆・"
-               "定型業務・自分仕様・繰り返し・見積もり・取り込み）— すべてあり")
+            ok("執務室スキル13点（予定・締切・思い出し・申し送り・学習・人物・代筆・"
+               "定型業務・自分仕様・繰り返し・見積もり・取り込み・決めたこと）— すべてあり")
         else:
             warn("執務室スキルが不足: " + "・".join(missing_sk),
                  "/my-secretary:update を実行すると足りない分だけ補充されます"
@@ -138,6 +138,13 @@ def main():
                          "行は「- 毎週 月 10:00 内容」「- 毎月 1日 終日 内容」の形にしてください")
             except Exception:
                 print("ℹ️  繰り返し.md はありますが、書式の点検はできませんでした")
+        dec = os.path.join(target, "決めたこと.md")
+        if os.path.isfile(dec):
+            try:
+                n = sum(1 for l in open(dec, encoding="utf-8", errors="replace") if l.strip().startswith("- "))
+                print("ℹ️  決めたこと（判断の記録）: %d件" % n)
+            except Exception:
+                pass
         routines_dir = os.path.join(target, "業務手順")
         if os.path.isdir(routines_dir):
             n = len([f for f in os.listdir(routines_dir) if f.endswith(".md")])
